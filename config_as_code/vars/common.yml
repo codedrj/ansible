@@ -1,0 +1,12 @@
+ansible_controller_url: 
+ansible_controller_port: 
+api: api/v2
+org: organizations
+awx_url: "{{ ansible_controller_url }}:{{ ansible_controller_port }}"
+awx_api: "{{ ansible_controller_url }}:{{ ansible_controller_port }}/{{ api }}"
+djo_ansible_controller_token: 
+ansible_controller_token: 
+datadir: ./json_data
+
+job_template_name: "My Job Template"
+output_file: "/tmp/job_template_related.json"
