@@ -1,71 +1,67 @@
 ---
-- name: "Configuration as Code"
-  hosts: all
-  connection: local
-  gather_facts: false
-  vars_files:
-    - vars/common.yml
-  vars:
-    resources:
-      - job_templates
-      - schedules
-  tasks:
-    - name: "Get related types to a Job Template and write to file"
-      ansible.builtin.uri:
-        url: "{{ awx_api }}/organizations/{{ org_id }}/job_templates/"
-        method: GET
-        headers:
-          Authorization: "Bearer {{ ansible_controller_token }}"
-        validate_certs: false
-        return_content: true
-        body_format: json
-        status_code: 200
-      register: job_templates
+- name: "Get related types to a Job Template and write to file"
+  ansible.builtin.uri:
+    url: "{{ awx_api }}/organizations/{{ org_id }}/job_templates/"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ ansible_controller_token }}"
+    validate_certs: false
+    return_content: true
+    body_format: json
+    status_code: 200
+  register: job_templates
 
-    - name: "Fail if job template not found"
-      ansible.builtin.fail:
-        msg: "Job template not found"
-      when: job_templates.json.results | length == 0
+- name: "DEBUG job templates"
+  ansible.builtin.debug:
+    var: job_templates
 
-    - name: "Set Job Template ID"
-      ansible.builtin.set_fact:
-        job_template_id: "{{ job_templates.json.results[0].id }}"
+- name: "End play"
+  ansible.builtin.meta: end_play
 
-    - name: "Find job templates related types"
-      ansible.builtin.set_fact:
-        job_template_related_items: "{{ job_templates.json.results[0].related | dict2items | selectattr('key', 'in', ['labels', 'inventory', 'project', 'organization', 'credentials', 'schedules', 'notification_templates_started', 'notification_templates_success', 'notification_templates_error', 'survey_spec'] ) }}"
+- name: "Fail if job template not found"
+  ansible.builtin.fail:
+    msg: "Job template not found"
+  when: job_templates.json.count == 0
 
-    - name: "DEBUG job template related items"
-      ansible.builtin.debug:
-        var: job_template_related_items
+- name: "Set Job Template ID"
+  ansible.builtin.set_fact:
+    job_template_id: "{{ job_templates.json.results[0].id }}"
 
-    - name: "Write related types to local file"
-      ansible.builtin.copy:
-        content: "{{ job_template_related_items | to_nice_json }}"
-        dest: "{{ output_file }}"
-        mode: '0644'
+- name: "Find job templates related types"
+  ansible.builtin.set_fact:
+    job_templates_related_items: "{{ job_templates.json.results[0].related | dict2items | selectattr('key', 'in', ['labels', 'inventory', 'project', 'organization', 'credentials', 'schedules', 'notification_templates_started', 'notification_templates_success', 'notification_templates_error', 'survey_spec'] ) }}"
 
-    - name: Loop through related items and get each
-      ansible.builtin.uri:
-        url: "{{ awx_url }}/{{ item.value }}"
-        method: GET
-        headers:
-          Authorization: "Bearer {{ ansible_controller_token }}"
-        return_content: true
-        body_format: json
-        status_code: 200
-        validate_certs: false
-      loop: "{{ job_template_related_items }}"
-      loop_control:
-        label: "{{ item.key }}"
-      register: job_template_related_items
+- name: "DEBUG job template related items"
+  ansible.builtin.debug:
+    var: job_templates_related_items
 
-    - name: Show results of related items
-      ansible.builtin.debug:
-        msg: |
-          Related item '{{ item.item.key }}' data:
-          {{ item.json }}
-      loop: "{{ job_template_related_items.results }}"
+- name: "Write related types to local file"
+  ansible.builtin.copy:
+    content: "{{ job_templates_related_items | to_nice_json }}"
+    dest: "{{ output_file }}"
+    mode: '0644'
 
-    - name: "End the play"
-      ansible.builtin.meta: end_play
+- name: Loop through related items and get each
+  ansible.builtin.uri:
+    url: "{{ awx_url }}/{{ item.value }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ ansible_controller_token }}"
+    return_content: true
+    body_format: json
+    status_code: 200
+    validate_certs: false
+  loop: "{{ job_templates_related_items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: job_templates_related_items
+
+- name: Show results of related items
+  ansible.builtin.debug:
+    msg: |
+      Related item '{{ item.item.key }}' data:
+      {{ item.json }}
+  loop: "{{ job_templates_related_items.results }}"
+
+- name: "End the play"
+  ansible.builtin.meta: end_play

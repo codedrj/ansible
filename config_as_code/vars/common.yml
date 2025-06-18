@@ -1,11 +1,11 @@
-ansible_controller_url: 
-ansible_controller_port: 
+---
+ansible_controller_url: http://192.168.1.186
+ansible_controller_port: 10445
 api: api/v2
 org: organizations
 awx_url: "{{ ansible_controller_url }}:{{ ansible_controller_port }}"
 awx_api: "{{ ansible_controller_url }}:{{ ansible_controller_port }}/{{ api }}"
-djo_ansible_controller_token: 
-ansible_controller_token: 
+ansible_controller_token: "{{ insert_token_here }}" 
 datadir: ./json_data
 
 job_template_name: "My Job Template"

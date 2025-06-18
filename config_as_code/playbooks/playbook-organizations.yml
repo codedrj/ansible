@@ -1,0 +1,91 @@
+---
+- name: "Get organization infomration"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files: 
+    - vars/common.yml
+    - vars/demo_org.yml
+  tasks:
+    - name: "Retrieve organization informtion"
+      uri:
+        url: "{{ awx_api }}/organizations/{{ org_id }}/"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ansible_controller_token }}"
+        validate_certs: false
+        return_content: true    
+        body_format: json
+        status_code: 200
+      register: organization_information
+      
+    - name: "Set organziation name"
+      ansible.builtin.set_fact:
+        org_name: "{{ organization_information.json.name }}"
+
+    - name: "DEBUG organization name"
+      ansible.builtin.debug:
+        var: org_name 
+
+#    - ansible.builtin.meta: end_play
+    
+    - name: "Get related types to a Job Template and write to file"
+      ansible.builtin.uri:
+        url: "{{ awx_api }}/organizations/{{ org_id }}/job_templates/"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ansible_controller_token }}"
+        validate_certs: false
+        return_content: true    
+        body_format: json
+        status_code: 200
+      register: job_templates
+
+    - name: "Fail if job template not found"
+      ansible.builtin.fail:
+        msg: "{{ org_name }} organization does not have any job templates"
+#      when: job_templates.json.results | length == 0
+      when: job_templates.json.count == 0
+
+    - name: "Set Job Template ID"
+      ansible.builtin.set_fact:
+        job_template_id: "{{ job_templates.json.results[0].id }}"
+
+    - name: "Find job templates related types"
+      ansible.builtin.set_fact:
+        job_template_related_items: "{{ job_templates.json.results[0].related | dict2items | selectattr('key', 'in', ['labels', 'inventory', 'project', 'organization', 'credentials', 'schedules', 'notification_templates_started', 'notification_templates_success', 'notification_templates_error', 'survey_spec'] ) }}"
+
+    - name: "DEBUG job template related items"
+      ansible.builtin.debug:
+        var: job_template_related_items 
+    
+    - name: "Write related types to local file"
+      ansible.builtin.copy:
+        content: "{{ job_template_related_items | to_nice_json }}"
+        dest: "{{ output_file }}"
+        mode: '0644'
+
+    - name: Loop through related items and get each
+      ansible.builtin.uri:
+       url: "{{ awx_url }}{{ item.value }}"
+       method: GET
+       headers:
+         Authorization: "Bearer {{ ansible_controller_token }}"
+       return_content: true
+       body_format: json
+       status_code: 200
+       validate_certs: false
+      loop: "{{ job_template_related_items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      register: job_template_related_items
+
+    - name: Show results of related items
+      ansible.builtin.debug:
+        msg: |
+          Related item '{{ item.item.key }}' data:
+          {{ item.json }}
+      loop: "{{ job_template_related_items.results }}"
+        
+    - name: "End play"
+      ansible.builtin.meta: end_play
