@@ -1,0 +1,16 @@
+---
+- name: "Find all of the files in the directory: {{ json_data_dir }}"
+  ansible.builtin.find:
+    paths: "{{ json_upload_dir }}"
+    patterns: "*.json"
+    file_type: file
+  register: found_files
+
+- ansible.builtin.debug: var=found_files.examined 
+- ansible.builtin.debug: var=found_files.path 
+- ansible.builtin.debug: var=found_files 
+
+- name: "Upload all the schedule files"
+  ansible.builtin.debug:
+    msg: "Uploading fle {{ item.path }}"
+  loop: "{{ found_files.files }}"

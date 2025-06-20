@@ -10,18 +10,53 @@
       - job_templates
       - schedules
   tasks:
-    - name: "Get Organization {{ org_id }} resources"
+    - name: "Check that resources are defined"
+      ansible.builtin.assert:
+        that: 
+          - _organizations is defined
+          - _job_templates is defined
+        fail_msg: "resources are undefined"
+    
+    - name: "Check if the directory exists: {{ json_data_dir }}"
+      ansible.builtin.stat:
+        path: "{{ json_data_dir }}"
+      register: pdir
+    
+    - name: "Remove the directory if it exists"
+      ansible.builtin.file:
+        path: "{{ json_data_dir }}"
+        state: absent
+      when: pdir.stat.isdir is defined and pdir.stat.isdir
+    
+    - name: "Ensure the directory exists"
+      ansible.builtin.file:
+        path: "{{ json_data_dir }}"
+        state: directory
+
+    - name: "Check if the directory exists: {{ json_upload_dir }}"
+      ansible.builtin.stat:
+        path: "{{ json_upload_dir }}"
+      register: pdir
+    
+    - name: "Remove the directory if it exists"
+      ansible.builtin.file:
+        path: "i{{ json_upload_dir }}"
+        state: absent
+      when: pdir.stat.isdir is defined and pdir.stat.isdir
+    
+    - name: "Ensure the directory exists"
+      ansible.builtin.file:
+        path: "{{ json_upload_dir }}"
+        state: directory
+
+    - name: "Get resources for Organization {{ org_id }}"
       ansible.builtin.include_tasks: organizations.yml
       when: 
         - _organizations is defined
         - _organizations is true
 
-    - name: "Get Organization {{ org_id }} job templates"
+    - name: "Get job templates for Organization {{ org_id }}"
       ansible.builtin.include_tasks: job_templates.yml
       when: 
         - _job_templates is defined
         - _job_templates is true
-
-    - name: "End Play"
-      ansible.builtin.meta: end_play
-

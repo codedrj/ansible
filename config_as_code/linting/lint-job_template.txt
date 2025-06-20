@@ -1,6 +1,0 @@
-[33m[34m]8;;https://ansible.readthedocs.io/projects/lint/rules/load-failure/\load-failure[runtimeerror]]8;;\[0m[2m:[0m [33mFailed to load YAML file: job_templates.yml[0m [2m[33m(warning)[0m
-[35mjob_templates.yml[0m:1 [2mwhile parsing a block mapping
-  in "<unicode string>", line 13, column 7
-did not find expected key
-  in "<unicode string>", line 14, column 8[0m
-[0m[0m

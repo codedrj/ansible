@@ -6,7 +6,6 @@ org: organizations
 awx_url: "{{ ansible_controller_url }}:{{ ansible_controller_port }}"
 awx_api: "{{ ansible_controller_url }}:{{ ansible_controller_port }}/{{ api }}"
 ansible_controller_token: "{{ insert_token_here }}" 
-datadir: ./json_data
 
-job_template_name: "My Job Template"
-output_file: "/tmp/job_template_related.json"
+json_data_dir: ./json_data
+json_upload_dir: ./uploads

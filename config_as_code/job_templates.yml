@@ -15,9 +15,6 @@
   ansible.builtin.debug:
     var: job_templates
 
-- name: "End play"
-  ansible.builtin.meta: end_play
-
 - name: "Fail if job template not found"
   ansible.builtin.fail:
     msg: "Job template not found"
@@ -35,13 +32,7 @@
   ansible.builtin.debug:
     var: job_templates_related_items
 
-- name: "Write related types to local file"
-  ansible.builtin.copy:
-    content: "{{ job_templates_related_items | to_nice_json }}"
-    dest: "{{ output_file }}"
-    mode: '0644'
-
-- name: Loop through related items and get each
+- name: "Loop through related items and get each"
   ansible.builtin.uri:
     url: "{{ awx_url }}/{{ item.value }}"
     method: GET
@@ -55,13 +46,24 @@
   loop_control:
     label: "{{ item.key }}"
   register: job_templates_related_items
+  no_log: true
 
-- name: Show results of related items
+- name: "Show results of related items"
   ansible.builtin.debug:
     msg: |
       Related item '{{ item.item.key }}' data:
       {{ item.json }}
   loop: "{{ job_templates_related_items.results }}"
 
-- name: "End the play"
-  ansible.builtin.meta: end_play
+- name: "Write related types to local file"
+  ansible.builtin.copy:
+    content: "{{ item.json | to_nice_json }}"
+    dest: "{{ json_upload_dir }}/{{ item.item.key }}.json"
+    mode: '0644'
+  loop: "{{ job_templates_related_items.results }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: "Begin file upload procedure"
+  ansible.builtin.include_tasks: upload_files.yml
+

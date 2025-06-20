@@ -1,0 +1,30 @@
+---
+- ansible.builtin.set_fact: 
+    item: schedules 
+
+- ansible.builtin.debug: var=item 
+
+- ansible.builtin.debug: 
+    msg: "GET {{ item }} from {{ awx_url }}"
+
+- name: "GET {{ item }} from AWX API" 
+  ansible.builtin.uri: 
+    url: "{{ awx_url }}/{{ item }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ ansible_controller_token }}"
+    validate_certs: false
+    return_content: true    
+    body_format: json
+  register: schedules_response 
+
+- name: "Display i{{ item }} data"
+  ansible.builtin.debug: var=schedules_response.json
+
+- name: "Write all schedules to a file"
+  ansible.builtin.copy:
+    content: "{{ schedules_response | to_nice_json }}"
+    dest: "{{ datadir }}/schedules/schedules.json"
+
+- name: "scrub the schedules"
+  ansible.builtin.include_tasks: scrub_schedules.yml

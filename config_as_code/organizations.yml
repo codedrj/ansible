@@ -50,9 +50,12 @@
     
 - name: "Write related types to local file"
   ansible.builtin.copy:
-    content: "{{ job_template_related_items | to_nice_json }}"
-    dest: "{{ output_file }}"
+    content: "{{ item.value | to_nice_json }}"
+    dest: "{{ json_data_dir }}/{{ item.key }}"
     mode: '0644'
+  loop: "{{ job_template_related_items }}"
+  loop_control:
+    label: "{{ item.key }}"
 
 - name: Loop through related items and get each
   ansible.builtin.uri:
@@ -75,6 +78,3 @@
       Related item '{{ item.item.key }}' data:
       {{ item.json }}
   loop: "{{ job_template_related_items.results }}"
-        
-- name: "End play"
-  ansible.builtin.meta: end_play
